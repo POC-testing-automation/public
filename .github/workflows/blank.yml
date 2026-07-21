@@ -90,10 +90,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          git remote add enterprise "https://${GHE_HOST}/${GHE_ORG}/${REPO_NAME}.git"
+          git remote add enterprise "https://x-access-token:${GHE_PAT}@${GHE_HOST}/${GHE_ORG}/${REPO_NAME}.git"
 
-          git -c http.extraheader="Authorization: token ${GHE_PAT}" \
-            push enterprise HEAD:refs/heads/dev --force-with-lease
+          git push enterprise HEAD:refs/heads/dev --force-with-lease
 
       - name: Summary
         if: always()
