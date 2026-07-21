@@ -165,10 +165,15 @@ jobs:
         run: |
           set -euo pipefail
 
-          git config user.email "vmtm.0404@gmail.com"
-          git config user.name "Vmtm-9211"
+          GH_USER_LOGIN=$(curl -s -H "Authorization: token ${GHE_PAT}" https://api.github.com/user | jq -r .login)
+          GH_USER_ID=$(curl -s -H "Authorization: token ${GHE_PAT}" https://api.github.com/user | jq -r .id)
+
+          git config user.name "${GH_USER_LOGIN}"
+          git config user.email "${GH_USER_ID}+${GH_USER_LOGIN}@users.noreply.github.com"
 
           git remote add enterprise "https://x-access-token:${GHE_PAT}@${GHE_HOST}/${GHE_ORG}/${REPO_NAME}.git"
+
+          git fetch enterprise dev || echo "No existing dev branch on enterprise remote yet — first push."
 
           git checkout -b sync-temp
           git rm -r --cached .github/workflows || true
