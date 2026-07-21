@@ -3,6 +3,17 @@ name: Sync to Enterprise
 on:
   repository_dispatch:
     types: [sync-repo]
+  workflow_dispatch:
+    inputs:
+      source_repo:
+        required: true
+        type: string
+      source_sha:
+        required: true
+        type: string
+      distinct_id:
+        required: true
+        type: string
 
 env:
   GHE_HOST: github.com
