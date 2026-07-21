@@ -92,6 +92,8 @@ jobs:
 
           git remote add enterprise "https://x-access-token:${GHE_PAT}@${GHE_HOST}/${GHE_ORG}/${REPO_NAME}.git"
 
+          git fetch enterprise dev || echo "No existing dev branch on enterprise remote yet — first push."
+
           git push enterprise HEAD:refs/heads/dev --force-with-lease
 
       - name: Summary
