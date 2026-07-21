@@ -27,8 +27,8 @@ jobs:
       - name: Checkout source repo at the triggering commit
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.event.client_payload.repo }}
-          ref: ${{ github.event.client_payload.sha }}
+          repository: ${{ github.event.client_payload.repo || github.event.inputs.source_repo }}
+          ref: ${{ github.event.client_payload.sha || github.event.inputs.source_sha }}
           token: ${{ secrets.SOURCE_READ_PAT }}
           fetch-depth: 0
 
