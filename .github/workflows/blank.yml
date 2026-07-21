@@ -101,9 +101,9 @@ jobs:
 
           git remote add enterprise "https://${GHE_HOST}/${GHE_ORG}/${REPO_NAME}.git"
 
-          # One-way sync: local checkout (from GitHub Teams) -> Enterprise dev.
-          # --force-with-lease guards against clobbering unexpected commits
-          # made directly on the Enterprise side.
+          echo "Remote URL:"
+          git remote -v
+
           git -c http.extraheader="Authorization: token ${GHE_PAT}" \
             push enterprise HEAD:refs/heads/dev --force-with-lease
 
