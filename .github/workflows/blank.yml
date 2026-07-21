@@ -1,0 +1,39 @@
+name: Sync to Enterprise
+
+on:
+  repository_dispatch:
+    types: [sync-repo]
+
+env:
+  GHE_HOST: github.com
+  GHE_ORG: DEVOPS-ACTIVITIES
+  REPO_NAME: testing-codes
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repo at the triggering commit
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.client_payload.repo }}
+          ref: ${{ github.event.client_payload.sha }}
+          token: ${{ secrets.SOURCE_READ_PAT }}
+          fetch-depth: 0
+
+      - name: Push to Enterprise dev branch
+        env:
+          GHE_PAT: ${{ secrets.GHE_PAT }}
+        run: |
+          set -euo pipefail
+
+          git remote add enterprise "https://x-access-token:${GHE_PAT}@${GHE_HOST}/${GHE_ORG}/${REPO_NAME}.git"
+
+          # One-way sync: local checkout (from GitHub Teams) -> Enterprise dev.
+          # --force-with-lease guards against clobbering unexpected commits
+          # made directly on the Enterprise side.
+          git push enterprise HEAD:refs/heads/dev --force-with-lease
+
+      - name: Summary
+        run: |
+          echo "Synced ${{ github.event.client_payload.repo }} @ ${{ github.event.client_payload.sha }} to Enterprise (${GHE_ORG}/${REPO_NAME}) dev branch." >> "$GITHUB_STEP_SUMMARY"
