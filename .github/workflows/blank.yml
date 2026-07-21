@@ -82,16 +82,7 @@ jobs:
           ref: ${{ github.event.client_payload.sha || github.event.inputs.source_sha }}
           token: ${{ secrets.SOURCE_READ_PAT }}
           fetch-depth: 0
-
-      - name: Debug - verify GHE_PAT works
-        env:
-          GHE_PAT: ${{ secrets.GHE_PAT }}
-        run: |
-          set -euo pipefail
-          echo "Token length: ${#GHE_PAT}"
-          curl -s -o /dev/null -w "HTTP status: %{http_code}\n" \
-            -H "Authorization: Bearer ${GHE_PAT}" \
-            "https://api.github.com/repos/${GHE_ORG}/${REPO_NAME}"
+          persist-credentials: false
 
       - name: Push to Enterprise dev branch
         env:
@@ -100,9 +91,6 @@ jobs:
           set -euo pipefail
 
           git remote add enterprise "https://${GHE_HOST}/${GHE_ORG}/${REPO_NAME}.git"
-
-          echo "Remote URL:"
-          git remote -v
 
           git -c http.extraheader="Authorization: token ${GHE_PAT}" \
             push enterprise HEAD:refs/heads/dev --force-with-lease
