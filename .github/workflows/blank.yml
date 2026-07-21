@@ -99,12 +99,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          git remote add enterprise "https://x-access-token:${GHE_PAT}@${GHE_HOST}/${GHE_ORG}/${REPO_NAME}.git"
+          git remote add enterprise "https://${GHE_HOST}/${GHE_ORG}/${REPO_NAME}.git"
 
           # One-way sync: local checkout (from GitHub Teams) -> Enterprise dev.
           # --force-with-lease guards against clobbering unexpected commits
           # made directly on the Enterprise side.
-          git push enterprise HEAD:refs/heads/dev --force-with-lease
+          git -c http.extraheader="Authorization: token ${GHE_PAT}" \
+            push enterprise HEAD:refs/heads/dev --force-with-lease
 
       - name: Summary
         if: always()
