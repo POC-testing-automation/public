@@ -89,12 +89,14 @@ jobs:
           GHE_PAT: ${{ secrets.GHE_PAT }}
         run: |
           set -euo pipefail
-
           git remote add enterprise "https://x-access-token:${GHE_PAT}@${GHE_HOST}/${GHE_ORG}/${REPO_NAME}.git"
 
-          git fetch enterprise dev || echo "No existing dev branch on enterprise remote yet — first push."
+          # Create a temp branch without workflow files
+          git checkout -b sync-temp
+          git rm -r --cached .github/workflows || true
+          git commit -m "Exclude workflow files from enterprise sync" --allow-empty
 
-          git push enterprise HEAD:refs/heads/dev --force-with-lease
+          git push enterprise sync-temp:refs/heads/dev --force-with-lease
 
       - name: Summary
         if: always()
