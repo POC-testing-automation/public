@@ -1,0 +1,66 @@
+name: Sync to Enterprise (with workflows)
+
+run-name: "Sync ${{ inputs.source_repo }} @ ${{ inputs.source_sha }} [${{ inputs.distinct_id }}]"
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_repo:
+        required: true
+        type: string
+      source_sha:
+        required: true
+        type: string
+      distinct_id:
+        required: true
+        type: string
+
+env:
+  GHE_HOST: github.com
+  GHE_ORG: DEVOPS-ACTIVITIES
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve target repo name
+        id: resolve
+        run: |
+          set -euo pipefail
+          SOURCE_REPO="${{ inputs.source_repo }}"
+          # source_repo is "owner/repo-name" — strip everything up to the last "/"
+          REPO_NAME="${SOURCE_REPO##*/}"
+          echo "repo_name=$REPO_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout source repo at the triggering commit
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.source_repo }}
+          ref: ${{ inputs.source_sha }}
+          token: ${{ secrets.SOURCE_READ_PAT }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Push to Enterprise dev branch (including workflow files)
+        env:
+          GHE_PAT: ${{ secrets.GHE_PAT }}
+          REPO_NAME: ${{ steps.resolve.outputs.repo_name }}
+        run: |
+          set -euo pipefail
+
+          GH_USER_LOGIN=$(curl -s -H "Authorization: token ${GHE_PAT}" https://api.github.com/user | jq -r .login)
+          GH_USER_ID=$(curl -s -H "Authorization: token ${GHE_PAT}" https://api.github.com/user | jq -r .id)
+
+          git config user.name "${GH_USER_LOGIN}"
+          git config user.email "${GH_USER_ID}+${GH_USER_LOGIN}@users.noreply.github.com"
+
+          git remote add enterprise "https://x-access-token:${GHE_PAT}@${GHE_HOST}/${GHE_ORG}/${REPO_NAME}.git"
+
+          git fetch enterprise dev || echo "No existing dev branch on enterprise remote yet — first push."
+
+          git push enterprise HEAD:refs/heads/dev --force-with-lease
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "Synced ${{ inputs.source_repo }} @ ${{ inputs.source_sha }} to Enterprise (${GHE_ORG}/${{ steps.resolve.outputs.repo_name }}) dev branch (workflows included)." >> "$GITHUB_STEP_SUMMARY"
