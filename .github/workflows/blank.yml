@@ -1,5 +1,7 @@
 # # name: Sync to Enterprise
 
+# # run-name: "Sync ${{ inputs.source_repo || github.event.client_payload.repo }} @ ${{ inputs.source_sha || github.event.client_payload.sha }} [${{ inputs.distinct_id || github.event.client_payload.distinct_id }}]"
+
 # # on:
 # #   repository_dispatch:
 # #     types: [sync-repo]
@@ -60,7 +62,8 @@
 # #         run: |
 # #           echo "Synced ${{ github.event.client_payload.repo || github.event.inputs.source_repo }} @ ${{ github.event.client_payload.sha || github.event.inputs.source_sha }} to Enterprise (${GHE_ORG}/${REPO_NAME}) dev branch." >> "$GITHUB_STEP_SUMMARY"
 
-# name: Sync to Enterprise
+
+# name: Sync to Enterprise (with workflows)
 
 # run-name: "Sync ${{ inputs.source_repo || github.event.client_payload.repo }} @ ${{ inputs.source_sha || github.event.client_payload.sha }} [${{ inputs.distinct_id || github.event.client_payload.distinct_id }}]"
 
@@ -97,7 +100,7 @@
 #           fetch-depth: 0
 #           persist-credentials: false
 
-#       - name: Push to Enterprise dev branch (excluding workflow files)
+#       - name: Push to Enterprise dev branch (including workflow files)
 #         env:
 #           GHE_PAT: ${{ secrets.GHE_PAT }}
 #         run: |
@@ -113,17 +116,12 @@
 
 #           git fetch enterprise dev || echo "No existing dev branch on enterprise remote yet — first push."
 
-#           git checkout -b sync-temp
-#           git rm -r --cached .github/workflows || true
-#           git commit -m "Exclude workflow files from enterprise sync" --allow-empty
-
-#           git push enterprise sync-temp:refs/heads/dev --force-with-lease
+#           git push enterprise HEAD:refs/heads/dev --force-with-lease
 
 #       - name: Summary
 #         if: always()
 #         run: |
-#           echo "Synced ${{ github.event.client_payload.repo || github.event.inputs.source_repo }} @ ${{ github.event.client_payload.sha || github.event.inputs.source_sha }} to Enterprise (${GHE_ORG}/${REPO_NAME}) dev branch." >> "$GITHUB_STEP_SUMMARY"
-
+#           echo "Synced ${{ github.event.client_payload.repo || github.event.inputs.source_repo }} @ ${{ github.event.client_payload.sha || github.event.inputs.source_sha }} to Enterprise (${GHE_ORG}/${REPO_NAME}) dev branch (workflows included)." >> "$GITHUB_STEP_SUMMARY"
 
 name: Sync to Enterprise (with workflows)
 
@@ -147,12 +145,20 @@ on:
 env:
   GHE_HOST: github.com
   GHE_ORG: DEVOPS-ACTIVITIES
-  REPO_NAME: testing-codes
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      - name: Resolve target repo name
+        id: resolve
+        run: |
+          set -euo pipefail
+          SOURCE_REPO="${{ github.event.client_payload.repo || github.event.inputs.source_repo }}"
+          # source_repo is "owner/repo-name" — strip everything up to the last "/"
+          REPO_NAME="${SOURCE_REPO##*/}"
+          echo "repo_name=$REPO_NAME" >> "$GITHUB_OUTPUT"
+
       - name: Checkout source repo at the triggering commit
         uses: actions/checkout@v4
         with:
@@ -165,6 +171,7 @@ jobs:
       - name: Push to Enterprise dev branch (including workflow files)
         env:
           GHE_PAT: ${{ secrets.GHE_PAT }}
+          REPO_NAME: ${{ steps.resolve.outputs.repo_name }}
         run: |
           set -euo pipefail
 
@@ -183,4 +190,4 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          echo "Synced ${{ github.event.client_payload.repo || github.event.inputs.source_repo }} @ ${{ github.event.client_payload.sha || github.event.inputs.source_sha }} to Enterprise (${GHE_ORG}/${REPO_NAME}) dev branch (workflows included)." >> "$GITHUB_STEP_SUMMARY"
+          echo "Synced ${{ github.event.client_payload.repo || github.event.inputs.source_repo }} @ ${{ github.event.client_payload.sha || github.event.inputs.source_sha }} to Enterprise (${GHE_ORG}/${{ steps.resolve.outputs.repo_name }}) dev branch (workflows included)." >> "$GITHUB_STEP_SUMMARY"
