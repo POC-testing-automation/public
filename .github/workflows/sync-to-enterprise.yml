@@ -212,3 +212,17 @@ jobs:
         working-directory: target
         run: |
           git push origin "${TARGET_BRANCH}"
+
+      # --------------------------------------------------
+      # 7. Cleanup
+      # --------------------------------------------------
+
+      - name: Cleanup cloned repositories
+        if: always()
+        run: |
+          echo "Cleaning up cloned repositories..."
+
+          rm -rf source
+          rm -rf target
+
+          echo "Cleanup completed."
