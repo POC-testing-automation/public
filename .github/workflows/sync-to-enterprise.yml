@@ -145,7 +145,7 @@ jobs:
 
 
       # --------------------------------------------------
-      # 3. Clone Enterprise repository
+      # 3. Clone Enterprise repository ("https://${GH_ENTERPRISE_PAT}@github.enterprise.com/${ENTERPRISE_ORG}/${ENTERPRISE_REPO}.git" \)
       # --------------------------------------------------
 
       - name: Clone Enterprise repository
@@ -153,7 +153,7 @@ jobs:
           GH_ENTERPRISE_PAT: ${{ secrets.GH_ENTERPRISE_PAT }}
         run: |
           git clone \
-            "https://${GH_ENTERPRISE_PAT}@github.enterprise.com/${ENTERPRISE_ORG}/${ENTERPRISE_REPO}.git" \
+            "https://${GH_ENTERPRISE_PAT}@github.com/${ENTERPRISE_ORG}/${ENTERPRISE_REPO}.git" \
             target
 
           cd target
