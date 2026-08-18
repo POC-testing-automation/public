@@ -309,7 +309,7 @@ jobs:
           git log -1 --oneline
 
           echo "Teams commit count:"
-          git rev-list --count sync
+          git rev-list --count HEAD
 
 
       # --------------------------------------------------
