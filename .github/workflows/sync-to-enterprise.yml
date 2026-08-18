@@ -1,3 +1,75 @@
+# # # name: Sync Teams Repo To Enterprise
+
+# # # on:
+# # #   repository_dispatch:
+# # #     types:
+# # #       - sync-to-enterprise
+
+# # # jobs:
+
+# # #   sync:
+# # #     runs-on: ubuntu-latest
+
+# # #     steps:
+
+# # #       - name: Read payload
+# # #         run: |
+# # #           echo "SOURCE_ORG=${{ github.event.client_payload.source_org }}" >> $GITHUB_ENV
+# # #           echo "SOURCE_REPO=${{ github.event.client_payload.source_repo }}" >> $GITHUB_ENV
+# # #           echo "ENTERPRISE_ORG=${{ github.event.client_payload.enterprise_org }}" >> $GITHUB_ENV
+# # #           echo "ENTERPRISE_REPO=${{ github.event.client_payload.enterprise_repo }}" >> $GITHUB_ENV
+# # #           echo "TARGET_BRANCH=${{ github.event.client_payload.target_branch }}" >> $GITHUB_ENV
+
+# # #       - name: Checkout source repository
+# # #         run: |
+
+# # #           git clone \
+# # #           https://${{ secrets.GH_TEAMS_PAT }}@github.com/${SOURCE_ORG}/${SOURCE_REPO}.git \
+# # #           source
+
+# # #           cd source
+# # #           git checkout sync
+
+# # #       - name: Checkout enterprise repository
+# # #         run: |
+
+# # #           git clone \
+# # #           https://${{ secrets.GH_ENTERPRISE_PAT }}@github.enterprise.com/${ENTERPRISE_ORG}/${ENTERPRISE_REPO}.git \
+# # #           target
+
+# # #           cd target
+
+# # #           git checkout ${TARGET_BRANCH} || \
+# # #           git checkout -b ${TARGET_BRANCH}
+
+# # #       - name: Sync content
+# # #         run: |
+
+# # #           rsync -av \
+# # #             --delete \
+# # #             --exclude ".git" \
+# # #             source/ \
+# # #             target/
+
+# # #       - name: Commit and Push
+# # #         run: |
+
+# # #           cd target
+
+# # #           git config user.name "Enterprise Sync Bot"
+# # #           git config user.email "sync-bot@company.com"
+
+# # #           git add .
+
+# # #           if git diff --cached --quiet; then
+# # #             echo "No changes"
+# # #             exit 0
+# # #           fi
+
+# # #           git commit -m "Sync from ${SOURCE_REPO}:sync"
+
+# # #           git push origin ${TARGET_BRANCH}
+
 # # name: Sync Teams Repo To Enterprise
 
 # # on:
@@ -6,69 +78,17 @@
 # #       - sync-to-enterprise
 
 # # jobs:
-
 # #   sync:
 # #     runs-on: ubuntu-latest
 
 # #     steps:
-
-# #       - name: Read payload
+# #       - name: Show received payload
 # #         run: |
-# #           echo "SOURCE_ORG=${{ github.event.client_payload.source_org }}" >> $GITHUB_ENV
-# #           echo "SOURCE_REPO=${{ github.event.client_payload.source_repo }}" >> $GITHUB_ENV
-# #           echo "ENTERPRISE_ORG=${{ github.event.client_payload.enterprise_org }}" >> $GITHUB_ENV
-# #           echo "ENTERPRISE_REPO=${{ github.event.client_payload.enterprise_repo }}" >> $GITHUB_ENV
-# #           echo "TARGET_BRANCH=${{ github.event.client_payload.target_branch }}" >> $GITHUB_ENV
-
-# #       - name: Checkout source repository
-# #         run: |
-
-# #           git clone \
-# #           https://${{ secrets.GH_TEAMS_PAT }}@github.com/${SOURCE_ORG}/${SOURCE_REPO}.git \
-# #           source
-
-# #           cd source
-# #           git checkout sync
-
-# #       - name: Checkout enterprise repository
-# #         run: |
-
-# #           git clone \
-# #           https://${{ secrets.GH_ENTERPRISE_PAT }}@github.enterprise.com/${ENTERPRISE_ORG}/${ENTERPRISE_REPO}.git \
-# #           target
-
-# #           cd target
-
-# #           git checkout ${TARGET_BRANCH} || \
-# #           git checkout -b ${TARGET_BRANCH}
-
-# #       - name: Sync content
-# #         run: |
-
-# #           rsync -av \
-# #             --delete \
-# #             --exclude ".git" \
-# #             source/ \
-# #             target/
-
-# #       - name: Commit and Push
-# #         run: |
-
-# #           cd target
-
-# #           git config user.name "Enterprise Sync Bot"
-# #           git config user.email "sync-bot@company.com"
-
-# #           git add .
-
-# #           if git diff --cached --quiet; then
-# #             echo "No changes"
-# #             exit 0
-# #           fi
-
-# #           git commit -m "Sync from ${SOURCE_REPO}:sync"
-
-# #           git push origin ${TARGET_BRANCH}
+# #           echo "Source Org: ${{ github.event.client_payload.source_org }}"
+# #           echo "Source Repo: ${{ github.event.client_payload.source_repo }}"
+# #           echo "Enterprise Org: ${{ github.event.client_payload.enterprise_org }}"
+# #           echo "Enterprise Repo: ${{ github.event.client_payload.enterprise_repo }}"
+# #           echo "Target Branch: ${{ github.event.client_payload.target_branch }}"
 
 # name: Sync Teams Repo To Enterprise
 
@@ -82,145 +102,301 @@
 #     runs-on: ubuntu-latest
 
 #     steps:
-#       - name: Show received payload
+
+#       # --------------------------------------------------
+#       # 1. Read dispatch payload
+#       # --------------------------------------------------
+
+#       - name: Read payload
 #         run: |
-#           echo "Source Org: ${{ github.event.client_payload.source_org }}"
-#           echo "Source Repo: ${{ github.event.client_payload.source_repo }}"
-#           echo "Enterprise Org: ${{ github.event.client_payload.enterprise_org }}"
-#           echo "Enterprise Repo: ${{ github.event.client_payload.enterprise_repo }}"
-#           echo "Target Branch: ${{ github.event.client_payload.target_branch }}"
+#           echo "Source Org      : ${{ github.event.client_payload.source_org }}"
+#           echo "Source Repo     : ${{ github.event.client_payload.source_repo }}"
+#           echo "Enterprise Org  : ${{ github.event.client_payload.enterprise_org }}"
+#           echo "Enterprise Repo : ${{ github.event.client_payload.enterprise_repo }}"
+#           echo "Target Branch   : ${{ github.event.client_payload.target_branch }}"
+
+#           echo "SOURCE_ORG=${{ github.event.client_payload.source_org }}" >> "$GITHUB_ENV"
+#           echo "SOURCE_REPO=${{ github.event.client_payload.source_repo }}" >> "$GITHUB_ENV"
+#           echo "ENTERPRISE_ORG=${{ github.event.client_payload.enterprise_org }}" >> "$GITHUB_ENV"
+#           echo "ENTERPRISE_REPO=${{ github.event.client_payload.enterprise_repo }}" >> "$GITHUB_ENV"
+#           echo "TARGET_BRANCH=${{ github.event.client_payload.target_branch }}" >> "$GITHUB_ENV"
+
+
+#       # --------------------------------------------------
+#       # 2. Clone Teams private repository
+#       # --------------------------------------------------
+
+#       - name: Clone Teams repository
+#         env:
+#           GH_TEAMS_PAT: ${{ secrets.GH_TEAMS_PAT }}
+#         run: |
+#           git clone \
+#             "https://${GH_TEAMS_PAT}@github.com/${SOURCE_ORG}/${SOURCE_REPO}.git" \
+#             source
+
+#           cd source
+
+#           git checkout sync
+
+#           echo "Teams repository checked out:"
+#           git branch --show-current
+
+#           git log -1 --oneline
+
+
+#       # --------------------------------------------------
+#       # 3. Clone Enterprise repository ("https://${GH_ENTERPRISE_PAT}@github.enterprise.com/${ENTERPRISE_ORG}/${ENTERPRISE_REPO}.git" \)
+#       # --------------------------------------------------
+
+#       - name: Clone Enterprise repository
+#         env:
+#           GH_ENTERPRISE_PAT: ${{ secrets.GH_ENTERPRISE_PAT }}
+#         run: |
+#           git clone \
+#             "https://${GH_ENTERPRISE_PAT}@github.com/${ENTERPRISE_ORG}/${ENTERPRISE_REPO}.git" \
+#             target
+
+#           cd target
+
+#           git fetch origin
+
+#           if git show-ref --verify --quiet "refs/remotes/origin/${TARGET_BRANCH}"; then
+#             git checkout "${TARGET_BRANCH}"
+#           else
+#             git checkout -b "${TARGET_BRANCH}"
+#           fi
+
+#           echo "Enterprise repository checked out:"
+#           git branch --show-current
+
+
+#       # --------------------------------------------------
+#       # 4. Synchronize source → target
+#       # --------------------------------------------------
+
+#       - name: Sync Teams code to Enterprise
+#         run: |
+#           rsync -av \
+#             --delete \
+#             --exclude=".git" \
+#             source/ \
+#             target/
+
+
+#       # --------------------------------------------------
+#       # 5. Commit changes
+#       # --------------------------------------------------
+
+#       - name: Commit changes
+#         working-directory: target
+#         run: |
+#           git config user.name "Enterprise Sync Bot"
+#           git config user.email "sync-bot@company.com"
+
+#           git add --all
+
+#           if git diff --cached --quiet; then
+#             echo "No changes to synchronize."
+#             exit 0
+#           fi
+
+#           git commit \
+#             -m "Sync ${SOURCE_REPO}:sync to ${ENTERPRISE_REPO}:${TARGET_BRANCH}"
+
+
+#       # --------------------------------------------------
+#       # 6. Push to Enterprise
+#       # --------------------------------------------------
+
+#       - name: Push to Enterprise
+#         working-directory: target
+#         run: |
+#           git push origin "${TARGET_BRANCH}"
+
+#       # --------------------------------------------------
+#       # 7. Cleanup
+#       # --------------------------------------------------
+
+#       - name: Cleanup cloned repositories
+#         if: always()
+#         run: |
+#           echo "Cleaning up cloned repositories..."
+
+#           rm -rf source
+#           rm -rf target
+
+#           echo "Cleanup completed."
 
 name: Sync Teams Repo To Enterprise
 
 on:
-  repository_dispatch:
-    types:
-      - sync-to-enterprise
+  workflow_call:
+
+    inputs:
+
+      source_repo:
+        description: "Teams source repository"
+        required: true
+        type: string
+
+      enterprise_org:
+        description: "Enterprise organization"
+        required: true
+        type: string
+
+      enterprise_repo:
+        description: "Enterprise repository"
+        required: true
+        type: string
+
+      target_branch:
+        description: "Enterprise target branch"
+        required: true
+        type: string
+
+    secrets:
+
+      GH_TEAMS_PAT:
+        required: true
+
+      GH_ENTERPRISE_PAT:
+        required: true
+
 
 jobs:
+
   sync:
+
     runs-on: ubuntu-latest
 
     steps:
 
       # --------------------------------------------------
-      # 1. Read dispatch payload
+      # 1. Display configuration
       # --------------------------------------------------
 
-      - name: Read payload
+      - name: Display configuration
         run: |
-          echo "Source Org      : ${{ github.event.client_payload.source_org }}"
-          echo "Source Repo     : ${{ github.event.client_payload.source_repo }}"
-          echo "Enterprise Org  : ${{ github.event.client_payload.enterprise_org }}"
-          echo "Enterprise Repo : ${{ github.event.client_payload.enterprise_repo }}"
-          echo "Target Branch   : ${{ github.event.client_payload.target_branch }}"
-
-          echo "SOURCE_ORG=${{ github.event.client_payload.source_org }}" >> "$GITHUB_ENV"
-          echo "SOURCE_REPO=${{ github.event.client_payload.source_repo }}" >> "$GITHUB_ENV"
-          echo "ENTERPRISE_ORG=${{ github.event.client_payload.enterprise_org }}" >> "$GITHUB_ENV"
-          echo "ENTERPRISE_REPO=${{ github.event.client_payload.enterprise_repo }}" >> "$GITHUB_ENV"
-          echo "TARGET_BRANCH=${{ github.event.client_payload.target_branch }}" >> "$GITHUB_ENV"
+          echo "Source repository : ${{ inputs.source_repo }}"
+          echo "Enterprise org    : ${{ inputs.enterprise_org }}"
+          echo "Enterprise repo   : ${{ inputs.enterprise_repo }}"
+          echo "Target branch     : ${{ inputs.target_branch }}"
 
 
       # --------------------------------------------------
-      # 2. Clone Teams private repository
+      # 2. Clone Teams repository
       # --------------------------------------------------
 
       - name: Clone Teams repository
         env:
           GH_TEAMS_PAT: ${{ secrets.GH_TEAMS_PAT }}
         run: |
+
           git clone \
-            "https://${GH_TEAMS_PAT}@github.com/${SOURCE_ORG}/${SOURCE_REPO}.git" \
+            "https://${GH_TEAMS_PAT}@github.com/POC-testing-automation/${{ inputs.source_repo }}.git" \
             source
 
           cd source
+
+          git fetch --all --prune
 
           git checkout sync
 
           echo "Teams repository checked out:"
           git branch --show-current
 
+          echo "Latest Teams commit:"
           git log -1 --oneline
+
+          echo "Teams commit count:"
+          git rev-list --count sync
 
 
       # --------------------------------------------------
-      # 3. Clone Enterprise repository ("https://${GH_ENTERPRISE_PAT}@github.enterprise.com/${ENTERPRISE_ORG}/${ENTERPRISE_REPO}.git" \)
+      # 3. Clone Enterprise repository
       # --------------------------------------------------
 
       - name: Clone Enterprise repository
         env:
           GH_ENTERPRISE_PAT: ${{ secrets.GH_ENTERPRISE_PAT }}
         run: |
+
           git clone \
-            "https://${GH_ENTERPRISE_PAT}@github.com/${ENTERPRISE_ORG}/${ENTERPRISE_REPO}.git" \
+            "https://${GH_ENTERPRISE_PAT}@github.com/${{ inputs.enterprise_org }}/${{ inputs.enterprise_repo }}.git" \
             target
 
           cd target
 
-          git fetch origin
+          git fetch --all --prune
 
-          if git show-ref --verify --quiet "refs/remotes/origin/${TARGET_BRANCH}"; then
-            git checkout "${TARGET_BRANCH}"
-          else
-            git checkout -b "${TARGET_BRANCH}"
-          fi
-
-          echo "Enterprise repository checked out:"
-          git branch --show-current
+          echo "Enterprise repository cloned."
 
 
       # --------------------------------------------------
-      # 4. Synchronize source → target
+      # 4. Synchronize Teams Git history
       # --------------------------------------------------
 
-      - name: Sync Teams code to Enterprise
+      - name: Synchronize Git history
         run: |
-          rsync -av \
-            --delete \
-            --exclude=".git" \
-            source/ \
-            target/
 
+          cd target
 
-      # --------------------------------------------------
-      # 5. Commit changes
-      # --------------------------------------------------
+          git remote add teams ../source
 
-      - name: Commit changes
-        working-directory: target
-        run: |
+          git fetch teams sync
+
+          echo "Teams history fetched."
+
+          echo "Teams commit count:"
+          git rev-list --count teams/sync
+
           git config user.name "Enterprise Sync Bot"
           git config user.email "sync-bot@company.com"
 
-          git add --all
+          git checkout -B \
+            "${{ inputs.target_branch }}" \
+            teams/sync
 
-          if git diff --cached --quiet; then
-            echo "No changes to synchronize."
-            exit 0
-          fi
+          echo "Target branch:"
+          git branch --show-current
 
-          git commit \
-            -m "Sync ${SOURCE_REPO}:sync to ${ENTERPRISE_REPO}:${TARGET_BRANCH}"
+          echo "Target latest commit:"
+          git log -1 --oneline
 
 
       # --------------------------------------------------
-      # 6. Push to Enterprise
+      # 5. Push complete Teams history to Enterprise
       # --------------------------------------------------
 
       - name: Push to Enterprise
         working-directory: target
         run: |
-          git push origin "${TARGET_BRANCH}"
+
+          git push \
+            origin \
+            "${{ inputs.target_branch }}" \
+            --force
+
+          echo "=========================================="
+          echo "Synchronization completed successfully"
+          echo "=========================================="
+
+          echo "Enterprise repository:"
+          echo "${{ inputs.enterprise_org }}/${{ inputs.enterprise_repo }}"
+
+          echo "Enterprise branch:"
+          echo "${{ inputs.target_branch }}"
+
 
       # --------------------------------------------------
-      # 7. Cleanup
+      # 6. Cleanup
       # --------------------------------------------------
 
-      - name: Cleanup cloned repositories
+      - name: Cleanup
         if: always()
         run: |
-          echo "Cleaning up cloned repositories..."
+
+          echo "Cleaning cloned repositories..."
 
           rm -rf source
           rm -rf target
